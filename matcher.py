@@ -1,6 +1,7 @@
 import json
 import requests
-import ahocorasick
+import ahocorasick  # type: ignore
+from typing import Optional
 from followthemoney import model
 from followthemoney.types import registry
 from normality import ascii_text
@@ -41,7 +42,7 @@ NORM_FORM: Categories = {
 }
 
 
-def norm_text(text):
+def norm_text(text: Optional[str]) -> Optional[str]:
     ascii = ascii_text(text)
     ascii = category_replace(ascii, NORM_FORM)
     if ascii is not None and len(ascii) > 2:
@@ -49,7 +50,7 @@ def norm_text(text):
     return None
 
 
-def build_automaton():
+def build_automaton() -> ahocorasick.Automaton:
     automaton = ahocorasick.Automaton()
     res = requests.get(URL, stream=True)
     res.raise_for_status()
@@ -61,10 +62,9 @@ def build_automaton():
         for name in proxy.get_type_values(registry.name, matchable=True):
             if not is_latin(name):
                 continue
-            name = norm_text(name)
-            if name is None:
-                continue
-            tokens.add(name)
+            norm_name = norm_text(name)
+            if norm_name is not None:
+                tokens.add(norm_name)
         for tok in tokens:
             automaton.add_word(tok, proxy.id)
     automaton.make_automaton()
